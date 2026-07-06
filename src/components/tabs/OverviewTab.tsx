@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Tv, ChevronLeft, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import Poster from '../Poster';
@@ -7,7 +7,7 @@ import EntryModal from '../EntryModal';
 import type { Entry } from '@/types';
 
 /* ============================================================
-   Airing Today - Cover Flow Carousel
+   Airing Today - 3D Coverflow Carousel
    ============================================================ */
 function AiringTodayCarousel({
   airingToday,
@@ -98,95 +98,134 @@ function AiringTodayCarousel({
         )}
       </div>
 
-      {/* Cover Flow Carousel */}
+      {/* 3D Coverflow Carousel */}
       <div
-        className="relative h-[320px] sm:h-[360px]"
+        className="relative h-[360px] sm:h-[400px]"
+        style={{ perspective: '1200px' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {airingToday.map((item, index) => {
-          const offset = index - activeIndex;
-          const isActive = index === activeIndex;
-          const absOffset = Math.abs(offset);
+        <div
+          className="relative w-full h-full"
+          style={{ transformStyle: 'preserve-3d' }}
+        >
+          {airingToday.map((item, index) => {
+            const offset = index - activeIndex;
+            const isActive = index === activeIndex;
+            const absOffset = Math.abs(offset);
 
-          // Wrap around for infinite feel
-          let visualOffset = offset;
-          if (offset > airingToday.length / 2) visualOffset = offset - airingToday.length;
-          if (offset < -airingToday.length / 2) visualOffset = offset + airingToday.length;
+            // Wrap around for infinite visual feel
+            let visualOffset = offset;
+            if (offset > airingToday.length / 2) visualOffset = offset - airingToday.length;
+            if (offset < -airingToday.length / 2) visualOffset = offset + airingToday.length;
 
-          const translateX = visualOffset * 55;
-          const scale = isActive ? 1 : Math.max(0.75, 1 - absOffset * 0.12);
-          const zIndex = airingToday.length - absOffset;
-          const opacity = isActive ? 1 : Math.max(0.3, 1 - absOffset * 0.25);
+            const absVisual = Math.abs(visualOffset);
 
-          return (
-            <motion.div
-              key={item.entry.id}
-              className="absolute inset-0 flex items-center justify-center cursor-pointer"
-              style={{ zIndex }}
-              animate={{
-                x: `${translateX}%`,
-                scale,
-                opacity,
-              }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              onClick={() => !isActive ? setActiveIndex(index) : onEntryClick(item.entry)}
-            >
-              <div className="relative flex flex-col items-center">
-                {/* Poster */}
-                <div
-                  className={`relative rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ${
-                    isActive ? 'shadow-red-900/40 ring-1 ring-white/10' : 'shadow-black/60'
-                  }`}
-                  style={{ width: isActive ? 180 : 140, height: isActive ? 260 : 200 }}
-                >
-                  {item.entry.poster ? (
-                    <img
-                      src={item.entry.poster}
-                      alt={item.entry.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center">
-                      <Tv className="w-10 h-10 text-[#444]" />
-                    </div>
-                  )}
+            // 3D Coverflow transforms
+            const rotateY = visualOffset * -45; // degrees
+            const translateX = visualOffset * 160; // px
+            const translateZ = isActive ? 120 : -absVisual * 80;
+            const scale = isActive ? 1 : Math.max(0.65, 1 - absVisual * 0.15);
+            const opacity = isActive ? 1 : Math.max(0.35, 1 - absVisual * 0.3);
+            const zIndex = airingToday.length - absVisual;
 
-                  {/* Glassmorphism overlay for active card */}
-                  {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  )}
+            // Card dimensions
+            const cardWidth = isActive ? 200 : 150;
+            const cardHeight = isActive ? 290 : 215;
 
-                  {/* Active card info overlay */}
-                  {isActive && (
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white font-bold text-sm truncate">{item.entry.title}</p>
-                      <p className="text-[#B3B3B3] text-[11px] mt-0.5">
-                        {item.ongoing.airDays.join(', ')}
-                      </p>
-                      <p className="text-[#E50914] text-[11px] font-semibold mt-1">
-                        Episode {item.ongoing.currentEpisode} / {item.ongoing.totalEpisodes}
-                      </p>
-                    </div>
+            return (
+              <motion.div
+                key={item.entry.id}
+                className="absolute top-1/2 left-1/2 cursor-pointer"
+                style={{
+                  zIndex,
+                  transformStyle: 'preserve-3d',
+                  marginLeft: -cardWidth / 2,
+                  marginTop: -cardHeight / 2,
+                }}
+                animate={{
+                  x: translateX,
+                  scale,
+                  opacity,
+                  rotateY,
+                  translateZ,
+                }}
+                transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+                onClick={() => !isActive ? setActiveIndex(index) : onEntryClick(item.entry)}
+              >
+                <div className="relative flex flex-col items-center" style={{ transformStyle: 'preserve-3d' }}>
+                  {/* Poster Card */}
+                  <div
+                    className={`relative rounded-2xl overflow-hidden shadow-2xl transition-shadow duration-300 ${
+                      isActive
+                        ? 'shadow-red-900/50 ring-1 ring-[#E50914]/30'
+                        : 'shadow-black/70'
+                    }`}
+                    style={{
+                      width: cardWidth,
+                      height: cardHeight,
+                      transformStyle: 'preserve-3d',
+                    }}
+                  >
+                    {item.entry.poster ? (
+                      <img
+                        src={item.entry.poster}
+                        alt={item.entry.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center">
+                        <Tv className="w-10 h-10 text-[#444]" />
+                      </div>
+                    )}
+
+                    {/* Glassmorphism overlay for active card */}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    )}
+
+                    {/* Subtle side shadow for depth on non-active cards */}
+                    {!isActive && visualOffset > 0 && (
+                      <div className="absolute inset-0 bg-gradient-to-l from-black/50 to-transparent" />
+                    )}
+                    {!isActive && visualOffset < 0 && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+                    )}
+
+                    {/* Active card info overlay */}
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="text-white font-bold text-sm truncate">{item.entry.title}</p>
+                        <p className="text-[#B3B3B3] text-[11px] mt-1">
+                          {item.ongoing.airDays.join(', ')}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[#E50914] text-[11px] font-bold px-2 py-0.5 bg-[#E50914]/20 rounded-full">
+                            Ep {item.ongoing.currentEpisode} / {item.ongoing.totalEpisodes}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Non-active card title below */}
+                  {!isActive && (
+                    <p className="text-[#888] text-[11px] mt-2.5 truncate max-w-[130px] text-center">
+                      {item.entry.title}
+                    </p>
                   )}
                 </div>
-
-                {/* Non-active card title below */}
-                {!isActive && (
-                  <p className="text-[#888] text-[11px] mt-2 truncate max-w-[120px] text-center">
-                    {item.entry.title}
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </div>
 
         {/* Dot indicators */}
         {airingToday.length > 1 && (
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1.5">
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1.5 pb-2">
             {airingToday.map((_, index) => (
               <button
                 key={index}
@@ -396,7 +435,7 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-8 w-full">
-      {/* Airing Today Hero */}
+      {/* Airing Today Hero - 3D Coverflow */}
       <AiringTodayCarousel
         airingToday={airingToday}
         onEntryClick={setSelectedEntry}
