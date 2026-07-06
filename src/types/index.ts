@@ -48,12 +48,43 @@ export interface Top10Drawer {
   entries: Top10Entry[];
 }
 
+export interface WatcherTitle {
+  emoji: string;
+  name: string;
+  min: number;
+  max: number;
+  description: string;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  condition: (stats: CollectionStats) => boolean;
+}
+
+export interface CollectionStats {
+  total: number;
+  completed: number;
+  ongoing: number;
+  dropped: number;
+  planned: number;
+  favorites: number;
+  top10: number;
+  avgRating: string;
+  countryBreakdown: [string, number][];
+  highestRated: { title: string; rating: number; entryId: string }[];
+  watchingSince: number | null;
+}
+
 export interface AppState {
   entries: Entry[];
   ongoing: OngoingEntry[];
   favorites: FavoriteEntry[];
   top10Drawers: Top10Drawer[];
   ongoingYear: number;
+  watchingSince: number | null;
 }
 
 export interface BackupMetadata {
@@ -69,6 +100,7 @@ export interface FullBackup {
   favorites: FavoriteEntry[];
   top10Drawers: Top10Drawer[];
   ongoingYear: number;
+  watchingSince: number | null;
 }
 
 export interface LegacyBackupData {
@@ -90,7 +122,8 @@ export type AppAction =
   | { type: 'ADD_DRAWER'; payload: number }
   | { type: 'DELETE_DRAWER'; payload: number }
   | { type: 'IMPORT_DATA'; payload: unknown }
-  | { type: 'SET_ONGOING_YEAR'; payload: number };
+  | { type: 'SET_ONGOING_YEAR'; payload: number }
+  | { type: 'SET_WATCHING_SINCE'; payload: number | null };
 
 export interface StorageResult {
   success: boolean;
