@@ -26,7 +26,8 @@ export const initialState: AppState = {
   ongoing: [],
   favorites: [],
   top10Drawers: [],
-  ongoingYear: new Date().getFullYear()
+  ongoingYear: new Date().getFullYear(),
+  watchingSince: null
 };
 
 /** Migrate legacy status values and ensure createdAt exists */
@@ -62,6 +63,7 @@ function validateData(data: unknown): AppState {
   const favorites = Array.isArray(d.favorites) ? d.favorites : [];
   const top10Drawers = Array.isArray(d.top10Drawers) ? d.top10Drawers : [];
   const ongoingYear = typeof d.ongoingYear === 'number' ? d.ongoingYear : new Date().getFullYear();
+  const watchingSince = typeof d.watchingSince === 'number' ? d.watchingSince : null;
 
   const migratedEntries = entries.map((e: Record<string, unknown>) => migrateEntry(e));
 
@@ -110,7 +112,8 @@ function validateData(data: unknown): AppState {
     ongoing: ongoing as OngoingEntry[],
     favorites: validFavorites,
     top10Drawers: validTop10Drawers,
-    ongoingYear
+    ongoingYear,
+    watchingSince
   };
 }
 
@@ -296,6 +299,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'SET_ONGOING_YEAR':
       return { ...state, ongoingYear: action.payload };
+
+    case 'SET_WATCHING_SINCE':
+      return { ...state, watchingSince: action.payload };
 
     default:
       return state;
